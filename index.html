@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Modelo 3D - Tibia proximal v2</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .viewer {
+      flex: 1;
+      background-color: #000;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .panel {
+      width: 340px;
+      padding: 20px;
+      background-color: #ffffff;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.18);
+      overflow-y: auto;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.4;
+    }
+
+    button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 11px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: #f7f7f7;
+    }
+
+    button:hover {
+      background-color: #e9e9e9;
+    }
+
+    .main-button {
+      font-weight: bold;
+      background-color: #e6f0ff;
+    }
+
+    .note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="viewer">
+      <iframe
+        id="api-frame"
+        src="https://sketchfab.com/models/07141c25f562433fb51f58521632dc33/embed?autostart=1&ui_infos=0&ui_controls=1&ui_stop=0"
+        allow="autoplay; fullscreen; xr-spatial-tracking"
+        allowfullscreen>
+      </iframe>
+    </div>
+
+    <div class="panel">
+      <h2>Modelo 3D interactivo v2</h2>
+
+      <p>
+        Tibia proximal segmentada con fémur, rótula, peroné proximal, tendón rotuliano, osteosíntesis y componentes tumorales anterior/posterior.
+      </p>
+
+      <button onclick="toggleObject('Femur')">
+        Mostrar / ocultar fémur
+      </button>
+
+      <button onclick="toggleObject('Rotula')">
+        Mostrar / ocultar rótula
+      </button>
+
+      <button onclick="toggleObject('Perone_Prox')">
+        Mostrar / ocultar peroné proximal
+      </button>
+
+      <button onclick="toggleObject('Tendon_Rotuliano')">
+        Mostrar / ocultar tendón rotuliano
+      </button>
+
+      <button onclick="toggleObject('Tibia_Diafisis')">
+        Mostrar / ocultar diáfisis tibial
+      </button>
+
+      <button onclick="toggleObject('Platillo_Tibial_Lateral')">
+        Mostrar / ocultar platillo tibial lateral
+      </button>
+
+      <button onclick="toggleObject('Platillo_Tibial_Medial')">
+        Mostrar / ocultar platillo tibial medial
+      </button>
+
+      <button onclick="toggleObject('Osteosintesis')">
+        Mostrar / ocultar osteosíntesis
+      </button>
+
+      <button onclick="toggleObject('Tumor_Anterior')">
+        Mostrar / ocultar tumor anterior
+      </button>
+
+      <button onclick="toggleObject('Tumor_Posterior')">
+        Mostrar / ocultar tumor posterior
+      </button>
+
+      <button class="main-button" onclick="showAll()">
+        Mostrar todo
+      </button>
+
+      <button class="main-button" onclick="hideTumor()">
+        Ocultar ambos tumores
+      </button>
+
+      <button class="main-button" onclick="showOnlyTumor()">
+        Mostrar solo tumores
+      </button>
+
+      <button class="main-button" onclick="showOnlyBone()">
+        Mostrar solo estructuras óseas
+      </button>
+
+      <button class="main-button" onclick="showOnlySoftTissue()">
+        Mostrar solo tendón y tumores
+      </button>
+
+      <p class="note">
+        Si un botón no responde, el nombre del objeto en Sketchfab debe coincidir exactamente con el nombre usado en este código.
+      </p>
+    </div>
+  </div>
+
+  <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
+
+  <script>
+    const iframe = document.getElementById('api-frame');
+    const client = new Sketchfab(iframe);
+
+    const modelUID = '07141c25f562433fb51f58521632dc33';
+
+    let api;
+    let objectNodes = {};
+    let objectVisibility = {};
+
+    client.init(modelUID, {
+      success: function onSuccess(apiInstance) {
+        api = apiInstance;
+        api.start();
+
+        api.addEventListener('viewerready', function() {
+          console.log('Sketchfab viewer listo');
+
+          api.getNodeMap(function(err, nodes) {
+            if (err) {
+              console.log('Error obteniendo nodos:', err);
+              return;
+            }
+
+            Object.keys(nodes).forEach(function(nodeID) {
+              const node = nodes[nodeID];
+
+              if (node.name) {
+                objectNodes[node.name] = node.instanceID;
+                objectVisibility[node.name] = true;
+                console.log('Objeto detectado:', node.name, node.instanceID);
+              }
+            });
+          });
+        });
+      },
+
+      error: function onError() {
+        console.log('Error al inicializar Sketchfab');
+      }
+    });
+
+    function toggleObject(name) {
+      if (!api || !objectNodes[name]) {
+        console.log('No se encontró el objeto:', name);
+        return;
+      }
+
+      const instanceID = objectNodes[name];
+
+      if (objectVisibility[name]) {
+        api.hide(instanceID);
+        objectVisibility[name] = false;
+      } else {
+        api.show(instanceID);
+        objectVisibility[name] = true;
+      }
+    }
+
+    function showAll() {
+      if (!api) return;
+
+      Object.keys(objectNodes).forEach(function(name) {
+        api.show(objectNodes[name]);
+        objectVisibility[name] = true;
+      });
+    }
+
+    function hideObject(name) {
+      if (!api || !objectNodes[name]) return;
+      api.hide(objectNodes[name]);
+      objectVisibility[name] = false;
+    }
+
+    function showObject(name) {
+      if (!api || !objectNodes[name]) return;
+      api.show(objectNodes[name]);
+      objectVisibility[name] = true;
+    }
+
+    function hideAll() {
+      Object.keys(objectNodes).forEach(function(name) {
+        api.hide(objectNodes[name]);
+        objectVisibility[name] = false;
+      });
+    }
+
+    function hideTumor() {
+      hideObject('Tumor_Anterior');
+      hideObject('Tumor_Posterior');
+    }
+
+    function showOnlyTumor() {
+      hideAll();
+      showObject('Tumor_Anterior');
+      showObject('Tumor_Posterior');
+    }
+
+    function showOnlyBone() {
+      hideAll();
+      showObject('Femur');
+      showObject('Rotula');
+      showObject('Perone_Prox');
+      showObject('Tibia_Diafisis');
+      showObject('Platillo_Tibial_Lateral');
+      showObject('Platillo_Tibial_Medial');
+    }
+
+    function showOnlySoftTissue() {
+      hideAll();
+      showObject('Tendon_Rotuliano');
+      showObject('Tumor_Anterior');
+      showObject('Tumor_Posterior');
+    }
+  </script>
+</body>
+</html>
